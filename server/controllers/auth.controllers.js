@@ -39,6 +39,58 @@ export const signup = async (req, res) => {
       isAdmin: user.isAdmin,
     });
   } catch (error) {
-    console.log("Error in signup route ", error.message);
+    console.log("Error in signup route", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const existUser = await User.findOne({ email });
+
+    if (!existUser) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    const correctPassword = await existUser.comparePassword(password);
+
+    if (!correctPassword) {
+      return res.status(400).json({ message: "invalid credentials" });
+    }
+
+    const token = generateToken(existUser._id);
+
+    res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      id: existUser._id,
+      username: existUser.username,
+      email: existUser.email,
+      isAdmin: existUser.isAdmin,
+    });
+  } catch (error) {
+    console.log("Error in login route", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("access_token");
+
+    res.status(200).json({ message: "Logout successfully" });
+  } catch (error) {
+    console.log("Error in signout route", error.message);
   }
 };
