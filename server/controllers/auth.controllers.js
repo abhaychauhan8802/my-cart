@@ -92,5 +92,23 @@ export const logout = async (req, res) => {
     res.status(200).json({ message: "Logout successfully" });
   } catch (error) {
     console.log("Error in signout route", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const profile = async (req, res) => {
+  try {
+    const { userId } = req;
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.log("Error in profile route", error.message);
+    res.status(500).json({ message: error.message });
   }
 };
