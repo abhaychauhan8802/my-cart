@@ -1,5 +1,23 @@
-import { generateToken } from "../lib/utils/generateToken.js";
+import { generateTokens } from "../lib/utils/generateToken.js";
 import User from "../models/user.model.js";
+import { redis } from "../lib/redis.js";
+import jwt from "jsonwebtoken";
+
+const setCookies = (res, accessToken, refreshToken) => {
+  res.cookie("access_token", accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000,
+  });
+
+  res.cookie("refresh_token", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+};
 
 export const signup = async (req, res) => {
   try {
@@ -23,14 +41,16 @@ export const signup = async (req, res) => {
 
     const user = await User.create({ username, email, password });
 
-    const token = generateToken(user._id);
+    const { accessToken, refreshToken } = generateTokens(user._id);
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    await redis.set(
+      `refresh_token:${user._id}`,
+      refreshToken,
+      "EX",
+      7 * 24 * 60 * 60 * 1000
+    );
+
+    setCookies(res, accessToken, refreshToken);
 
     res.status(201).json({
       id: user._id,
@@ -64,14 +84,16 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "invalid credentials" });
     }
 
-    const token = generateToken(existUser._id);
+    const { accessToken, refreshToken } = generateTokens(existUser._id);
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    await redis.set(
+      `refresh_token:${existUser._id}`,
+      refreshToken,
+      "EX",
+      7 * 24 * 60 * 60 * 1000
+    );
+
+    setCookies(res, accessToken, refreshToken);
 
     res.status(200).json({
       id: existUser._id,
@@ -87,11 +109,23 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    const refreshToken = req.cookies.refresh_token;
+
+    if (refreshToken) {
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET
+      );
+
+      await redis.del(`refresh_token:${decoded.id}`);
+    }
+
     res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
 
     res.status(200).json({ message: "Logout successfully" });
   } catch (error) {
-    console.log("Error in signout route", error.message);
+    console.log("Error in logout route", error.message);
     res.status(500).json({ message: error.message });
   }
 };
