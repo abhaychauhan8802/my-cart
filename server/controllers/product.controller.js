@@ -1,0 +1,66 @@
+import cloudinary from "../lib/cloudinary.js";
+import Product from "../models/product.model.js";
+
+export const createProduct = async (req, res) => {
+  try {
+    const { name, description, price, image, category } = req.body;
+
+    if (!name || !description || !price || !image || !category) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    let cloudinaryResponse = null;
+
+    if (image) {
+      cloudinaryResponse = await cloudinary.uploader.upload(image, {
+        folder: "products",
+      });
+    }
+
+    console.log(cloudinaryResponse.public_id);
+
+    const product = await Product.create({
+      name,
+      description,
+      price,
+      image: cloudinaryResponse?.secure_url
+        ? cloudinaryResponse.secure_url
+        : "",
+      category,
+    });
+
+    res.status(201).json(product);
+  } catch (error) {
+    console.log("Error in create product route", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const removeProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(400).json({ message: "Product not found" });
+    }
+
+    if (product.image) {
+      const publicId = product.image.split("/").pop().split(".")[0];
+
+      try {
+        await cloudinary.uploader.destroy(`products/${publicId}`);
+      } catch (error) {
+        console.log(error.message);
+      }
+    }
+
+    await Product.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    console.log("Error in remove product route", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};

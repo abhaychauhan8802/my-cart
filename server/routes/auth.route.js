@@ -5,7 +5,7 @@ import {
   logout,
   profile,
 } from "../controllers/auth.controllers.js";
-import { verifyToken } from "../middlewares/verifyToken.js";
+import { verifyToken } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
