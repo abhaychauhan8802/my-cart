@@ -3,6 +3,8 @@ import User from "../models/user.model.js";
 import { redis } from "../lib/redis.js";
 import jwt from "jsonwebtoken";
 
+// Function
+
 const setCookies = (res, accessToken, refreshToken) => {
   res.cookie("access_token", accessToken, {
     httpOnly: true,
@@ -18,6 +20,8 @@ const setCookies = (res, accessToken, refreshToken) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 };
+
+// Controllers
 
 export const signup = async (req, res) => {
   try {

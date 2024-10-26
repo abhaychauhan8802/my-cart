@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { connectToDb } from "./lib/mongodb.js";
 import authRoute from "./routes/auth.route.js";
 import productRoute from "./routes/product.route.js";
+import cartRoute from "./routes/cart.route.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
 app.use("/api/products", productRoute);
+app.use("/api/cart", cartRoute);
 
 const port = process.env.PORT || 3001;
 

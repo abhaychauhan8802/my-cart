@@ -2,6 +2,20 @@ import cloudinary from "../lib/cloudinary.js";
 import { redis } from "../lib/redis.js";
 import Product from "../models/product.model.js";
 
+// Functions
+
+const updateFeaturedProductCache = async () => {
+  try {
+    const featuredProducts = await Product.find({ isFeatured: true });
+
+    await redis.set("featured_products", JSON.stringify(featuredProducts));
+  } catch (error) {
+    console.log(error.message);
+  }
+};
+
+// Controllers
+
 export const createProduct = async (req, res) => {
   try {
     const { name, description, price, image, category } = req.body;
@@ -17,8 +31,6 @@ export const createProduct = async (req, res) => {
         folder: "my-cart/products",
       });
     }
-
-    console.log(cloudinaryResponse.public_id);
 
     const product = await Product.create({
       name,
@@ -58,6 +70,8 @@ export const deleteProduct = async (req, res) => {
     }
 
     await Product.findByIdAndDelete(id);
+
+    updateFeaturedProductCache();
 
     res.status(200).json({ message: "Product deleted successfully" });
   } catch (error) {
@@ -139,9 +153,7 @@ export const toggleFeaturedProduct = async (req, res) => {
     const updatedProduct = await product.save();
 
     // Update cache
-    const featuredProducts = await Product.find({ isFeatured: true });
-
-    await redis.set("featured_products", JSON.stringify(featuredProducts));
+    updateFeaturedProductCache();
 
     res.status(200).json(updatedProduct);
   } catch (error) {
