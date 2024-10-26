@@ -81,8 +81,10 @@ export const getFeaturedProducts = async (req, res) => {
   try {
     let featuredProducts = await redis.get("featured_products");
 
+    featuredProducts = JSON.parse(featuredProducts);
+
     if (featuredProducts) {
-      return res.status(200).json(JSON.parse(featuredProducts));
+      return res.status(200).json(featuredProducts);
     }
 
     featuredProducts = await Product.find({ isFeatured: true });
@@ -97,5 +99,53 @@ export const getFeaturedProducts = async (req, res) => {
   } catch (error) {
     console.log("Error in featured products route", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const getRecommendedProducts = async (req, res) => {
+  try {
+    const recommendedProducts = await Product.aggregate([
+      {
+        $sample: { size: 4 },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          description: 1,
+          image: 1,
+          price: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json(recommendedProducts);
+  } catch (error) {
+    console.log("Error in recommended products route", error);
+  }
+};
+
+export const toggleFeaturedProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.isFeatured = !product.isFeatured;
+    const updatedProduct = await product.save();
+
+    // Update cache
+    const featuredProducts = await Product.find({ isFeatured: true });
+
+    await redis.set("featured_products", JSON.stringify(featuredProducts));
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    console.log("Error in toggle featured products route", error);
+    redis.status(500).json({ message: error.message });
   }
 };

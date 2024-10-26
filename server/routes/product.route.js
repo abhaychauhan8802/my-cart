@@ -5,6 +5,8 @@ import {
   deleteProduct,
   getAllProduct,
   getFeaturedProducts,
+  getRecommendedProducts,
+  toggleFeaturedProduct,
 } from "../controllers/product.controller.js";
 
 const router = express.Router();
@@ -13,8 +15,15 @@ const router = express.Router();
 router.post("/create", verifyToken, isAdmin, createProduct);
 router.delete("/delete/:id", verifyToken, isAdmin, deleteProduct);
 router.get("/", verifyToken, isAdmin, getAllProduct);
+router.put(
+  "/toggle-featured-product/:id",
+  verifyToken,
+  isAdmin,
+  toggleFeaturedProduct
+);
 
 // Public routes
 router.get("/featured-products", getFeaturedProducts);
+router.get("/recommended-products", getRecommendedProducts);
 
 export default router;
