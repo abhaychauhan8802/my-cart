@@ -75,7 +75,7 @@ export const login = async (req, res) => {
     const existUser = await User.findOne({ email });
 
     if (!existUser) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     const correctPassword = await existUser.comparePassword(password);
@@ -137,7 +137,7 @@ export const profile = async (req, res) => {
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json(user);

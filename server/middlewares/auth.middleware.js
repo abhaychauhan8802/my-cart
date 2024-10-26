@@ -26,7 +26,7 @@ export const isAdmin = async (req, res, next) => {
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(400).json({ message: "User not round" });
+      return res.status(404).json({ message: "User not round" });
     }
 
     if (user.isAdmin) {
