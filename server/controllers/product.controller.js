@@ -1,4 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
+import { redis } from "../lib/redis.js";
 import Product from "../models/product.model.js";
 
 export const createProduct = async (req, res) => {
@@ -72,6 +73,29 @@ export const getAllProduct = async (req, res) => {
     res.status(200).json(products);
   } catch (error) {
     console.log("Error in get all product route", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getFeaturedProducts = async (req, res) => {
+  try {
+    let featuredProducts = await redis.get("featured_products");
+
+    if (featuredProducts) {
+      return res.status(200).json(JSON.parse(featuredProducts));
+    }
+
+    featuredProducts = await Product.find({ isFeatured: true });
+
+    if (!featuredProducts) {
+      return res.status(404).json({ message: "Featured Products not found" });
+    }
+
+    await redis.set("featured_products", JSON.stringify(featuredProducts));
+
+    res.status(200).json(featuredProducts);
+  } catch (error) {
+    console.log("Error in featured products route", error);
     res.status(500).json({ message: error.message });
   }
 };
