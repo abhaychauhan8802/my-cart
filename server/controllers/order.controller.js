@@ -5,7 +5,10 @@ import User from "../models/user.model.js";
 export const getAllOrders = async (req, res) => {
   try {
     try {
-      const orders = await Order.find({}).populate("products.product").exec();
+      const orders = await Order.find({})
+        .populate("user")
+        .populate("products.product")
+        .exec();
 
       if (!orders) {
         return res.status(404).json({ message: "Order list is empty" });

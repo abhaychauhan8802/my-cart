@@ -20,7 +20,12 @@ export const createProduct = async (req, res) => {
   try {
     const { name, description, price, image, category } = req.body;
 
-    if (!name || !description || !price || !image || !category) {
+    if (
+      name.length === 0 ||
+      description.length === 0 ||
+      image.length === 0 ||
+      category.length === 0
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -81,8 +86,11 @@ export const deleteProduct = async (req, res) => {
 };
 
 export const getAllProduct = async (req, res) => {
+  const start = parseInt(req.query.start) || 0;
+  const limit = parseInt(req.query.limit) || 9;
+
   try {
-    const products = await Product.find({});
+    const products = await Product.find({}).skip(start).limit(limit);
 
     res.status(200).json(products);
   } catch (error) {
@@ -143,7 +151,7 @@ export const toggleFeaturedProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const product = await Product.findById(id);
+    let product = await Product.findById(id);
 
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
